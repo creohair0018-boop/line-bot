@@ -1,3 +1,15 @@
+// pages/api/line.js
+export default function handler(req, res) {
+  // ← ここがハンドラーの先頭
+  console.log('Channel Secret:', process.env.CHANNEL_SECRET ? 'OK' : 'MISSING');
+  console.log('Access Token:', process.env.CHANNEL_ACCESS_TOKEN ? 'OK' : 'MISSING');
+
+  // 署名検証やメッセージ処理はここから書く
+  // 署名検証などのコードが入る前にログを出すことで
+  // 環境変数が正しく取れているか確認できる
+
+  res.status(200).send('OK'); // とりあえず 200 を返すだけ
+}
 const line = require('@line/bot-sdk');
 const express = require('express');
 
