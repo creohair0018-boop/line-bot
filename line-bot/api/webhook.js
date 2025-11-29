@@ -1,59 +1,27 @@
-console.log("CHANNEL_ACCESS_TOKEN:", process.env.CHANNEL_ACCESS_TOKEN);
-console.log("CHANNEL_SECRET:", process.env.CHANNEL_SECRET);
+import { Client, middleware } from '@line/bot-sdk';
 
-export default function handler(req, res) {
-  res.status(200).json({ message: "ok" });
-}
-
-const line = require('@line/bot-sdk');
-const express = require('express');
-
-const config = {
+const client = new Client({
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.CHANNEL_SECRET
-};
-
-const client = new line.Client(config);
-const app = express();
-
-// JSON body のパース
-app.use(express.json());
-
-app.post('/api/webhook', (req, res) => {
-  const events = req.body.events;
-  if (!events) {
-    return res.status(200).send('No events');
-  }
-
-  Promise.all(events.map(handleEvent))
-    .then((result) => res.status(200).json(result))
-    .catch((err) => {
-      console.error(err);
-      res.status(500).end();
-    });
 });
 
-async function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
-    return null;
+export default async function handler(req, res) {
+  console.log("CHANNEL_ACCESS_TOKEN:", process.env.CHANNEL_ACCESS_TOKEN ? "OK" : "NOT SET");
+  console.log("CHANNEL_SECRET:", process.env.CHANNEL_SECRET ? "OK" : "NOT SET");
+
+  if (req.method === 'POST') {
+    try {
+      // LINE Webhook ミドルウェアの検証
+      await middleware({
+        channelSecret: process.env.CHANNEL_SECRET
+      })(req, res, () => {});
+      console.log("Webhook received:", req.body);
+      res.status(200).send('OK');
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error');
+    }
+  } else {
+    res.status(200).send('GET OK');
   }
-
-  const text = event.message.text.toLowerCase();
-
-  let replyText = 'こんにちは！カテゴリーを選んでください。\n1. ヘアケア\n2. スキンケア\n3. 美容家電';
-
-  if (text.includes('ヘアケア')) {
-    replyText = '髪質を教えてください: 太い / 細い / 普通';
-  } else if (text.includes('スキンケア')) {
-    replyText = 'お肌の悩みを教えてください';
-  } else if (text.includes('美容家電')) {
-    replyText = 'お悩みを教えてください';
-  }
-
-  return client.replyMessage(event.replyToken, {
-    type: 'text',
-    text: replyText
-  });
 }
-
-module.exports = app;
